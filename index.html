@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Controle de Empréstimos</title>
+
+<style>
+
+body{
+    font-family: Arial;
+    margin:20px;
+    background:#f4f4f4;
+}
+
+.container{
+    max-width:1200px;
+    margin:auto;
+}
+
+.card{
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    margin-bottom:20px;
+    box-shadow:0 2px 5px rgba(0,0,0,.1);
+}
+
+input{
+    padding:10px;
+    margin:5px;
+    border:1px solid #ccc;
+}
+
+button{
+    padding:10px 15px;
+    background:#0d6efd;
+    color:white;
+    border:none;
+    border-radius:5px;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#084298;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+table th{
+    background:#0d6efd;
+    color:white;
+}
+
+table th,
+table td{
+    border:1px solid #ddd;
+    padding:10px;
+}
+
+.atrasado{
+    background:#ffcccc;
+}
+
+.dashboard{
+    display:flex;
+    gap:15px;
+    flex-wrap:wrap;
+}
+
+.kpi{
+    flex:1;
+    min-width:200px;
+    background:#fff;
+    padding:15px;
+    border-radius:10px;
+    text-align:center;
+}
+
+.kpi h2{
+    margin:0;
+    color:#0d6efd;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>Controle de Empréstimos</h1>
+
+<div class="dashboard">
+
+<div class="kpi">
+<h2 id="clientes">0</h2>
+Clientes
+</div>
+
+<div class="kpi">
+<h2 id="emprestado">R$ 0</h2>
+Capital Emprestado
+</div>
+
+<div class="kpi">
+<h2 id="atrasados">0</h2>
+Atrasados
+</div>
+
+</div>
+
+<div class="card">
+
+<h2>Novo Empréstimo</h2>
+
+<input id="nome" placeholder="Nome Cliente">
+
+<input id="cpf" placeholder="CPF">
+
+<input id="telefone" placeholder="Telefone">
+
+<input id="pix" placeholder="PIX">
+
+<br>
+
+<input id="valor"
+type="number"
+placeholder="Valor Emprestado">
+
+<input id="juros"
+type="number"
+step="0.01"
+placeholder="Juros %">
+
+<input id="vencimento"
+type="date">
+
+<button onclick="salvar()">
+Salvar
+</button>
+
+</div>
+
+<div class="card">
+
+<h2>Contratos</h2>
+
+<table>
+
+<thead>
+
+<tr>
+<th>Contrato</th>
+<th>Cliente</th>
+<th>Valor</th>
+<th>PIX</th>
+<th>Vencimento</th>
+<th>Dias Atraso</th>
+<th>Multa</th>
+<th>Total</th>
+</tr>
+
+</thead>
+
+<tbody id="lista"></tbody>
+
+</table>
+
+</div>
+
+</div>
+
+<script>
+
+let contratos =
+JSON.parse(
+localStorage.getItem("contratos")
+) || [];
+
+function salvar(){
+
+let numero =
+"EMP" +
+String(
+contratos.length+1
+).padStart(3,"0");
+
+let cliente = {
+
+contrato:numero,
+
+nome:
+document.getElementById("nome").value,
+
+cpf:
+document.getElementById("cpf").value,
+
+telefone:
+document.getElementById("telefone").value,
+
+pix:
+document.getElementById("pix").value,
+
+valor:
+parseFloat(
+document.getElementById("valor").value
+),
+
+juros:
+parseFloat(
+document.getElementById("juros").value
+),
+
+vencimento:
+document.getElementById("vencimento").value
+
+};
+
+contratos.push(cliente);
+
+localStorage.setItem(
+"contratos",
+JSON.stringify(contratos)
+);
+
+location.reload();
+
+}
+
+function atualizar(){
+
+let lista =
+document.getElementById("lista");
+
+let totalEmprestado = 0;
+
+let atrasados = 0;
+
+contratos.forEach(c=>{
+
+let hoje =
+new Date();
+
+let venc =
+new Date(c.vencimento);
+
+let diff =
+Math.floor(
+(hoje-venc)/
+(1000*60*60*24)
+);
+
+let dias =
+diff > 0
+? diff
+: 0;
+
+let multa =
+dias * 35;
+
+let total =
+(c.valor * (
+1+(c.juros/100)
+))
++ multa;
+
+totalEmprestado +=
+c.valor;
+
+if(dias > 0)
+atrasados++;
+
+lista.innerHTML += `
+
+<tr class="${
+dias>0
+? 'atrasado'
+: ''
+}">
+
+<td>${c.contrato}</td>
+<td>${c.nome}</td>
+<td>R$ ${c.valor.toFixed(2)}</td>
+<td>${c.pix}</td>
+<td>${c.vencimento}</td>
+<td>${dias}</td>
+<td>R$ ${multa.toFixed(2)}</td>
+<td>R$ ${total.toFixed(2)}</td>
+
+</tr>
+
+`;
+
+});
+
+document.getElementById(
+"clientes"
+).innerHTML =
+contratos.length;
+
+document.getElementById(
+"emprestado"
+).innerHTML =
+"R$ " +
+totalEmprestado.toFixed(2);
+
+document.getElementById(
+"atrasados"
+).innerHTML =
+atrasados;
+
+}
+
+atualizar();
+
+</script>
+
+</body>
+</html>
